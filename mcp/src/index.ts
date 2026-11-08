@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { applicationDefault, initializeApp } from "firebase-admin/app";
@@ -163,11 +163,21 @@ server.registerTool(
   },
 );
 
+const MAX_SOURCE_BYTES = 50 * 1024 * 1024;
+
 async function loadImage(source: string): Promise<Buffer> {
-  if (!/^https?:\/\//.test(source)) return readFile(source);
-  const response = await fetch(source);
+  if (!/^https?:\/\//.test(source)) {
+    if ((await stat(source)).size > MAX_SOURCE_BYTES) throw new Error("The image file is too large.");
+    return readFile(source);
+  }
+  const response = await fetch(source, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`Download failed: HTTP ${response.status}`);
-  return Buffer.from(await response.arrayBuffer());
+  if (Number(response.headers.get("content-length") ?? 0) > MAX_SOURCE_BYTES) {
+    throw new Error("The image is too large.");
+  }
+  const body = Buffer.from(await response.arrayBuffer());
+  if (body.length > MAX_SOURCE_BYTES) throw new Error("The image is too large.");
+  return body;
 }
 
 server.registerTool(

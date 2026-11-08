@@ -76,6 +76,8 @@ final class CloudStore {
     private var uid: String?
     private var imagesInFlight: Set<String> = []
     private var uploaded: Set<String> = []
+    private var latestScenes: [Preset] = []
+    private let localOwnerKey = "cloud.localOwner"
 
     init() {
         guard Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist") != nil else { return }
@@ -89,6 +91,9 @@ final class CloudStore {
     private func authChanged(_ user: User?) {
         listeners.forEach { $0.remove() }
         listeners = []
+        imagesInFlight = []
+        uploaded = []
+        latestScenes = []
         guard let user else {
             uid = nil
             campaigns = []
@@ -144,6 +149,8 @@ final class CloudStore {
         let scenes = snapshot.documents
             .compactMap { Preset(id: $0.documentID, data: $0.data()) }
             .sorted { ($0.order ?? Int.max, $0.name) < ($1.order ?? Int.max, $1.name) }
+        latestScenes = scenes
+        UserDefaults.standard.set(uid, forKey: localOwnerKey) // Local scenes now belong to this account.
         onScenes(scenes)
         downloadMissingImages(scenes, uid: uid)
     }
@@ -170,8 +177,12 @@ final class CloudStore {
     /// Moves the scenes made before login into the account, once per account.
     private func firstUploadIfNeeded(uid: String) {
         let key = "cloud.firstUpload.\(uid)"
-        guard !UserDefaults.standard.bool(forKey: key) else { return }
-        UserDefaults.standard.set(true, forKey: key)
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: key) else { return }
+        // Scenes synced from one account must never be uploaded into another.
+        if let owner = defaults.string(forKey: localOwnerKey), owner != uid { return }
+        defaults.set(true, forKey: key)
+        defaults.set(uid, forKey: localOwnerKey)
         let presets = localPresetsForFirstUpload()
         guard !presets.isEmpty else { return }
 
@@ -223,9 +234,10 @@ final class CloudStore {
                 defer { imagesInFlight.remove(hash) }
                 do {
                     let data = try await imageReference(hash, uid: uid).data(maxSize: 30 * 1024 * 1024)
+                    guard self.uid == uid else { return } // The account changed during the download.
                     guard Link.hash(of: data) == hash else { return log("Image \(hash.prefix(8)) failed its checksum") }
                     Store.write(data, hash: hash)
-                    onScenes(scenes) // Redraw the tiles with the new image.
+                    onScenes(latestScenes) // Redraw the tiles with the new image.
                 } catch {
                     report(error)
                 }
