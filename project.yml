@@ -1,0 +1,60 @@
+name: MirageArcane
+options:
+  bundleIdPrefix: cz.zdvihal.miragearcane
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: DURA6R5YTV # Personal Team (free account, 7-day installs)
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: NO
+targets:
+  MirageIPad:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: [iPad, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.zdvihal.miragearcane.ipad
+        TARGETED_DEVICE_FAMILY: "2"
+    info:
+      path: iPad/Info.plist
+      properties:
+        CFBundleDisplayName: Mirage Arcane
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleExternalDisplayNonInteractive:
+              - UISceneConfigurationName: External Display
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).ExternalDisplaySceneDelegate
+        NSLocalNetworkUsageDescription: Mirage Arcane talks to your Hue Bridge and your Apple TV.
+        NSBonjourServices:
+          - _hue._tcp
+          - _mirage-arcane._tcp
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+  MirageTV:
+    type: application
+    platform: tvOS
+    deploymentTarget: "17.0"
+    sources: [TV, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.zdvihal.miragearcane.tv
+        TARGETED_DEVICE_FAMILY: "3"
+    info:
+      path: TV/Info.plist
+      properties:
+        CFBundleDisplayName: Mirage Arcane
+        UILaunchScreen: {}
+        NSLocalNetworkUsageDescription: Mirage Arcane receives scenes from your iPad.
+        NSBonjourServices:
+          - _mirage-arcane._tcp
