@@ -1,0 +1,2 @@
+// REVERSED_CLIENT_ID comes from the Firebase project. scripts/firebase-config.sh writes it.
+#include? "Firebase.local.xcconfig"
