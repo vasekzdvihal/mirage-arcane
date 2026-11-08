@@ -143,7 +143,10 @@ final class CloudStore {
         guard let snapshot, let uid else { return report(error) }
         // An empty answer from the cache says nothing about the server.
         if snapshot.documents.isEmpty {
-            if !snapshot.metadata.isFromCache { firstUploadIfNeeded(uid: uid) }
+            if !snapshot.metadata.isFromCache, !firstUploadIfNeeded(uid: uid) {
+                latestScenes = []
+                onScenes([]) // The account really has no scenes, so show none.
+            }
             return
         }
         let scenes = snapshot.documents
@@ -175,16 +178,17 @@ final class CloudStore {
     }
 
     /// Moves the scenes made before login into the account, once per account.
-    private func firstUploadIfNeeded(uid: String) {
+    /// Returns true when local scenes were sent to the account.
+    private func firstUploadIfNeeded(uid: String) -> Bool {
         let key = "cloud.firstUpload.\(uid)"
         let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: key) else { return }
+        guard !defaults.bool(forKey: key) else { return false }
         // Scenes synced from one account must never be uploaded into another.
-        if let owner = defaults.string(forKey: localOwnerKey), owner != uid { return }
+        if let owner = defaults.string(forKey: localOwnerKey), owner != uid { return false }
         defaults.set(true, forKey: key)
         defaults.set(uid, forKey: localOwnerKey)
         let presets = localPresetsForFirstUpload()
-        guard !presets.isEmpty else { return }
+        guard !presets.isEmpty else { return false }
 
         let user = root(uid)
         let campaign = user.collection("campaigns").document()
@@ -203,6 +207,7 @@ final class CloudStore {
                 if let error { self?.report(error) } else { self?.log("Uploaded \(presets.count) local scenes") }
             }
         }
+        return true
     }
 
     // MARK: Images
