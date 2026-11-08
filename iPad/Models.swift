@@ -3,6 +3,22 @@ import Foundation
 import Security
 import UIKit
 
+/// A Hue scene that exists only as data, until the iPad can reach the bridge and create it.
+struct LightDesign: Codable, Hashable {
+    struct Action: Codable, Hashable {
+        var lightId: String
+        var on: Bool
+        var brightness: Double?
+        var x: Double?
+        var y: Double?
+    }
+
+    var name: String
+    var groupId: String
+    var groupType: String
+    var actions: [Action]
+}
+
 struct Preset: Codable, Identifiable, Hashable {
     var id = UUID().uuidString
     var name: String
@@ -10,6 +26,7 @@ struct Preset: Codable, Identifiable, Hashable {
     var order: Int?
     var hueSceneID: String?
     var hueDynamic = false
+    var lightDesign: LightDesign?
     var playlistURI: String?
     var playlistName: String?
     var shuffle = true

@@ -9,6 +9,7 @@ import { getFirestore, type DocumentData } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import sharp from "sharp";
 import { z } from "zod";
+import { registerHueTools } from "./hue-tools.js";
 
 const projectId = process.env.MIRAGE_FIREBASE_PROJECT ?? "mirage-arcane";
 const email = process.env.MIRAGE_USER_EMAIL;
@@ -201,5 +202,10 @@ server.registerTool(
     return result({ sceneId, imageHash, bytes: jpeg.length });
   },
 );
+
+registerHueTools(server, {
+  homeDocument: async () => db.collection("users").doc(await uid()).collection("hue").doc("home"),
+  scenes: () => collection("scenes"),
+});
 
 await server.connect(new StdioServerTransport());

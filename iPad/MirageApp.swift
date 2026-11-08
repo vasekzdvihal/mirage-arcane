@@ -34,6 +34,7 @@ private enum ActiveSheet: Identifiable {
 
 struct StageView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.scenePhase) private var scenePhase
     @State private var sheet: ActiveSheet?
 
     private let columns = [GridItem(.adaptive(minimum: 300), spacing: 20)]
@@ -88,6 +89,9 @@ struct StageView: View {
                     Button("Add", systemImage: "plus") { sheet = .edit(Preset(name: "New scene")) }
                 }
             }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.realizeLightDesigns() }
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {

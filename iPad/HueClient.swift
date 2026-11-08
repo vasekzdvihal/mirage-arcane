@@ -132,6 +132,29 @@ final class HueClient {
             .sorted { ($0.room, $0.name) < ($1.room, $1.name) }
     }
 
+    /// Creates a scene on the bridge from a saved design and returns the new scene's id.
+    func createScene(_ design: LightDesign) async throws -> String {
+        struct Reply: Decodable {
+            struct Item: Decodable { let rid: String }
+            let data: [Item]
+        }
+        let actions: [[String: Any]] = design.actions.map { action in
+            var body: [String: Any] = ["on": ["on": action.on]]
+            if let brightness = action.brightness { body["dimming"] = ["brightness": brightness] }
+            if let x = action.x, let y = action.y { body["color"] = ["xy": ["x": x, "y": y]] }
+            return ["target": ["rid": action.lightId, "rtype": "light"], "action": body]
+        }
+        let body: [String: Any] = [
+            "type": "scene",
+            "metadata": ["name": design.name],
+            "group": ["rid": design.groupId, "rtype": design.groupType],
+            "actions": actions,
+        ]
+        let reply = try JSONDecoder().decode(Reply.self, from: await request("POST", "/clip/v2/resource/scene", json: body))
+        guard let id = reply.data.first?.rid else { throw AppError("The bridge did not return a scene id.") }
+        return id
+    }
+
     func recall(sceneID: String, dynamic: Bool, fadeSeconds: Double) async throws {
         let recall: [String: Any] = dynamic
             ? ["action": "dynamic_palette"]

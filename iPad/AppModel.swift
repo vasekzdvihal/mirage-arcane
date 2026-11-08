@@ -114,6 +114,7 @@ final class AppModel {
     var selectedCampaignID: String?
     private let hue = HueClient()
     private let spotify = SpotifyClient()
+    private var designsInProgress: Set<String> = []
 
     var huePaired: Bool { hue.isPaired }
     var spotifyLoggedIn: Bool { spotify.isLoggedIn }
@@ -131,6 +132,7 @@ final class AppModel {
             guard let self else { return }
             self.presets = scenes
             Store.save(scenes)
+            self.realizeLightDesigns()
         }
         cloud.localPresetsForFirstUpload = { [weak self] in self?.presets ?? [] }
         cloud.log = { [weak self] in self?.log("Cloud", $0) }
@@ -334,6 +336,29 @@ final class AppModel {
         }
     }
 
+    /// Light designs saved while away become real Hue scenes as soon as the bridge is reachable.
+    func realizeLightDesigns() {
+        guard hue.isPaired else { return }
+        for preset in presets where !designsInProgress.contains(preset.id) {
+            guard let design = preset.lightDesign else { continue }
+            designsInProgress.insert(preset.id)
+            Task {
+                defer { designsInProgress.remove(preset.id) }
+                do {
+                    let sceneID = try await hue.createScene(design)
+                    var updated = presets.first { $0.id == preset.id } ?? preset
+                    updated.hueSceneID = sceneID
+                    updated.lightDesign = nil
+                    save(updated)
+                    log("Hue", "Created scene \(design.name)")
+                    await refreshHue()
+                } catch {
+                    log("Hue", "Design \(design.name) not created yet: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
     // MARK: Hue setup
 
     func findBridge() async {
@@ -359,6 +384,7 @@ final class AppModel {
             Keychain.set(try await hue.pair(), for: "hue.key")
             hueMessage = "Paired."
             await refreshHue()
+            realizeLightDesigns()
         } catch {
             hueMessage = error.localizedDescription
         }
