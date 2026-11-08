@@ -32,7 +32,8 @@ install() { # scheme, device type, products folder
   fi
   echo "== $scheme -> $udid"
   xcodebuild -quiet -project MirageArcane.xcodeproj -scheme "$scheme" -configuration Debug \
-    -destination "id=$udid" -derivedDataPath build -allowProvisioningUpdates build
+    -destination "id=$udid" -derivedDataPath build -allowProvisioningUpdates \
+    -skipPackagePluginValidation -skipMacroValidation build
   xcrun devicectl device install app --device "$udid" "build/Build/Products/$products/$scheme.app"
 }
 
