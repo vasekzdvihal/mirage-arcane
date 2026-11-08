@@ -2,6 +2,13 @@ name: MirageArcane
 options:
   bundleIdPrefix: cz.zdvihal.miragearcane
   createIntermediateGroups: true
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 12.0.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: 9.0.0
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -15,7 +22,18 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
-    sources: [iPad, Shared]
+    sources:
+      - path: iPad
+        excludes: ["*.xcconfig"]
+      - Shared
+    configFiles:
+      Debug: iPad/Base.xcconfig
+      Release: iPad/Base.xcconfig
+    dependencies:
+      - package: Firebase
+        products: [FirebaseAuth, FirebaseCore, FirebaseFirestore, FirebaseStorage]
+      - package: GoogleSignIn
+        product: GoogleSignIn
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cz.zdvihal.miragearcane.ipad
@@ -25,6 +43,8 @@ targets:
       properties:
         CFBundleDisplayName: Mirage Arcane
         UILaunchScreen: {}
+        CFBundleURLTypes:
+          - CFBundleURLSchemes: ["$(REVERSED_CLIENT_ID)"]
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations~ipad:
           - UIInterfaceOrientationLandscapeLeft

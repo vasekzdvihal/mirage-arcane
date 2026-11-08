@@ -1,3 +1,4 @@
+import GoogleSignIn
 import PhotosUI
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct MirageIPadApp: App {
                 .preferredColorScheme(.dark)
                 .tint(Color(red: 0.86, green: 0.68, blue: 0.36))
                 .statusBarHidden(true)
+                .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
                 .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         }
     }
@@ -25,7 +27,7 @@ private enum ActiveSheet: Identifiable {
         switch self {
         case .setup: "setup"
         case .log: "log"
-        case .edit(let preset): preset.id.uuidString
+        case .edit(let preset): preset.id
         }
     }
 }
@@ -39,14 +41,25 @@ struct StageView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVGrid(columns: columns, spacing: 20) {
-                    ForEach(model.presets) { preset in
-                        Button { model.fire(preset) } label: { PresetTile(preset: preset) }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button("Edit", systemImage: "pencil") { sheet = .edit(preset) }
-                                Button("Delete", systemImage: "trash", role: .destructive) { model.delete(preset) }
+                VStack(alignment: .leading, spacing: 28) {
+                    ForEach(Array(model.sections.enumerated()), id: \.offset) { _, section in
+                        VStack(alignment: .leading, spacing: 12) {
+                            if let title = section.title {
+                                Text(title)
+                                    .font(.system(.title3, design: .serif).weight(.semibold))
+                                    .foregroundStyle(.secondary)
                             }
+                            LazyVGrid(columns: columns, spacing: 20) {
+                                ForEach(section.presets) { preset in
+                                    Button { model.fire(preset) } label: { PresetTile(preset: preset) }
+                                        .buttonStyle(.plain)
+                                        .contextMenu {
+                                            Button("Edit", systemImage: "pencil") { sheet = .edit(preset) }
+                                            Button("Delete", systemImage: "trash", role: .destructive) { model.delete(preset) }
+                                        }
+                                }
+                            }
+                        }
                     }
                 }
                 .padding(24)
@@ -58,6 +71,16 @@ struct StageView: View {
                     ConnectionPill(symbol: "lightbulb.fill", isOn: model.huePaired)
                     ConnectionPill(symbol: "music.note", isOn: model.spotifyLoggedIn && !model.outputName.isEmpty)
                     ConnectionPill(symbol: "tv.fill", isOn: model.tv.isConnected || ExternalStage.shared.isConnected)
+                }
+                ToolbarItem(placement: .principal) {
+                    if model.cloud.campaigns.count > 1 {
+                        Picker("Campaign", selection: Binding(
+                            get: { model.selectedCampaign?.id },
+                            set: { model.selectedCampaignID = $0 })) {
+                            ForEach(model.cloud.campaigns) { Text($0.name).tag(String?.some($0.id)) }
+                        }
+                        .pickerStyle(.menu)
+                    }
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button("Log", systemImage: "list.bullet.rectangle") { sheet = .log }
@@ -177,6 +200,19 @@ struct SetupView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("Account") {
+                    switch model.cloud.authState {
+                    case .unconfigured:
+                        Text("Firebase is not configured in this build.").foregroundStyle(.secondary)
+                    case .signedOut:
+                        Button("Sign in with Google") { Task { await model.cloud.signIn() } }
+                    case .signedIn(let email):
+                        Text(email)
+                        Button("Sign out", role: .destructive) { model.cloud.signOut() }
+                    }
+                    if !model.cloud.message.isEmpty { Text(model.cloud.message).foregroundStyle(.secondary) }
+                }
+
                 Section("Hue Bridge") {
                     TextField("Bridge address", text: Binding(get: { model.bridgeIP }, set: { model.setBridgeIP($0) }))
                         .keyboardType(.numbersAndPunctuation)
@@ -256,6 +292,15 @@ struct PresetEditor: View {
                     VStack(alignment: .leading) {
                         Text("Transition: \(preset.fadeSeconds, specifier: "%.1f") s")
                         Slider(value: $preset.fadeSeconds, in: 0...10, step: 0.5)
+                    }
+                }
+
+                if !model.cloud.locations.isEmpty {
+                    Section("Location") {
+                        Picker("Location", selection: $preset.locationId) {
+                            Text("Unsorted").tag(String?.none)
+                            ForEach(model.cloud.locations) { Text($0.name).tag(String?.some($0.id)) }
+                        }
                     }
                 }
 

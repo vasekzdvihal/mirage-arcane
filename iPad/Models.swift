@@ -4,8 +4,10 @@ import Security
 import UIKit
 
 struct Preset: Codable, Identifiable, Hashable {
-    var id = UUID()
+    var id = UUID().uuidString
     var name: String
+    var locationId: String?
+    var order: Int?
     var hueSceneID: String?
     var hueDynamic = false
     var playlistURI: String?
@@ -95,6 +97,11 @@ enum Store {
     static func imageData(_ hash: String) -> Data? {
         guard Link.isValidHash(hash) else { return nil }
         return try? Data(contentsOf: imageDirectory.appendingPathComponent("\(hash).jpg"))
+    }
+
+    static func write(_ data: Data, hash: String) {
+        guard Link.isValidHash(hash) else { return }
+        try? data.write(to: imageDirectory.appendingPathComponent("\(hash).jpg"), options: .atomic)
     }
 
     static func image(_ hash: String) -> UIImage? {

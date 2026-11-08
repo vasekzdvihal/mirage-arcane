@@ -7,6 +7,7 @@ xcodegen generate       # after any project.yml change or new source file
 scripts/install.sh      # rebuild and reinstall on the real iPad (free signing lasts 7 days)
 xcodebuild -quiet -project MirageArcane.xcodeproj -scheme MirageIPad \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath build build
+PATH="$PWD/mcp/node_modules/.bin:$PATH" pnpm --dir mcp test   # MCP and security rules, on the Firebase emulator
 ```
 
 ## Architecture
@@ -27,10 +28,11 @@ xcodebuild -quiet -project MirageArcane.xcodeproj -scheme MirageIPad \
 ## Workflow
 1. Branch from `main` for each change.
 2. Verify on a simulator matching iPadOS 26 and 27 when touching the second screen.
-3. Never commit tokens. The Spotify Client ID and Hue key are entered at runtime.
+3. Never commit tokens or Firebase config. This repo is public. The Spotify Client ID and Hue key are entered at runtime.
 
 ## Map
 - docs/architecture.md — how the app talks to Hue, Spotify and the projector, plus test hooks
+- docs/backend.md — Firebase data model, security rules, MCP server, project setup
 - docs/setup.md — first-time setup on a new device, accounts, game-night checklist
 - docs/roadmap.md — what is done and what comes next
 - docs/analysis.md — original feasibility analysis, dated record with sources

@@ -94,8 +94,8 @@ final class TVClient {
 @Observable
 final class AppModel {
     var presets: [Preset] = []
-    var statuses: [UUID: [Channel: ChannelStatus]] = [:]
-    var activePresetID: UUID?
+    var statuses: [String: [Channel: ChannelStatus]] = [:]
+    var activePresetID: String?
     var logEntries: [LogEntry] = []
 
     var bridgeIP = UserDefaults.standard.string(forKey: "hue.ip") ?? ""
@@ -110,6 +110,8 @@ final class AppModel {
     var outputName = UserDefaults.standard.string(forKey: "spotify.output.name") ?? ""
 
     let tv = TVClient()
+    let cloud = CloudStore()
+    var selectedCampaignID: String?
     private let hue = HueClient()
     private let spotify = SpotifyClient()
 
@@ -125,6 +127,13 @@ final class AppModel {
         presets = Store.loadPresets() ?? Self.seedPresets()
         Store.save(presets)
         tv.start()
+        cloud.onScenes = { [weak self] scenes in
+            guard let self else { return }
+            self.presets = scenes
+            Store.save(scenes)
+        }
+        cloud.localPresetsForFirstUpload = { [weak self] in self?.presets ?? [] }
+        cloud.log = { [weak self] in self?.log("Cloud", $0) }
         Task {
             await refreshHue()
             await refreshSpotify()
@@ -193,11 +202,30 @@ final class AppModel {
         if let index = presets.firstIndex(where: { $0.id == preset.id }) { presets[index] = preset }
         else { presets.append(preset) }
         Store.save(presets)
+        cloud.save(preset)
     }
 
     func delete(_ preset: Preset) {
         presets.removeAll { $0.id == preset.id }
         Store.save(presets)
+        cloud.delete(preset)
+    }
+
+    var selectedCampaign: Campaign? {
+        cloud.campaigns.first { $0.id == selectedCampaignID } ?? cloud.campaigns.first
+    }
+
+    /// Scenes grouped by location for the selected campaign. Without cloud data, one flat group.
+    var sections: [(title: String?, presets: [Preset])] {
+        guard let campaign = selectedCampaign else { return [(nil, presets)] }
+        let locations = cloud.locations.filter { $0.campaignId == campaign.id }
+        let ids = Set(cloud.locations.map(\.id))
+        var result: [(title: String?, presets: [Preset])] = locations.map { location in
+            (location.name, presets.filter { $0.locationId == location.id })
+        }
+        let unsorted = presets.filter { $0.locationId.map { !ids.contains($0) } ?? true }
+        if !unsorted.isEmpty { result.append(("Unsorted", unsorted)) }
+        return result
     }
 
     /// Each system runs on its own, so one failure never blocks the other two.
