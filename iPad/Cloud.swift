@@ -19,6 +19,37 @@ struct CampaignLocation: Identifiable, Hashable {
     var order: Int
 }
 
+extension LightDesign {
+    init?(firestore data: [String: Any]) {
+        guard let name = data["name"] as? String, let groupId = data["groupId"] as? String,
+              let groupType = data["groupType"] as? String, let actions = data["actions"] as? [[String: Any]] else { return nil }
+        self.init(name: name, groupId: groupId, groupType: groupType, actions: actions.compactMap { item in
+            guard let lightId = item["lightId"] as? String else { return nil }
+            return Action(lightId: lightId, on: item["on"] as? Bool ?? true,
+                          brightness: (item["brightness"] as? NSNumber)?.doubleValue,
+                          x: (item["x"] as? NSNumber)?.doubleValue,
+                          y: (item["y"] as? NSNumber)?.doubleValue)
+        })
+    }
+
+    var firestoreData: [String: Any] {
+        [
+            "name": name,
+            "groupId": groupId,
+            "groupType": groupType,
+            "actions": actions.map { action in
+                var item: [String: Any] = ["lightId": action.lightId, "on": action.on]
+                if let brightness = action.brightness { item["brightness"] = brightness }
+                if let x = action.x, let y = action.y {
+                    item["x"] = x
+                    item["y"] = y
+                }
+                return item
+            },
+        ]
+    }
+}
+
 extension Preset {
     init?(id: String, data: [String: Any]) {
         guard let name = data["name"] as? String else { return nil }
@@ -27,6 +58,7 @@ extension Preset {
         order = data["order"] as? Int
         hueSceneID = data["hueSceneID"] as? String
         hueDynamic = data["hueDynamic"] as? Bool ?? false
+        lightDesign = (data["lightDesign"] as? [String: Any]).flatMap(LightDesign.init(firestore:))
         playlistURI = data["playlistURI"] as? String
         playlistName = data["playlistName"] as? String
         shuffle = data["shuffle"] as? Bool ?? true
@@ -42,6 +74,7 @@ extension Preset {
             "order": order ?? NSNull(),
             "hueSceneID": hueSceneID ?? NSNull(),
             "hueDynamic": hueDynamic,
+            "lightDesign": lightDesign?.firestoreData ?? NSNull(),
             "playlistURI": playlistURI ?? NSNull(),
             "playlistName": playlistName ?? NSNull(),
             "shuffle": shuffle,

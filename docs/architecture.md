@@ -1,6 +1,6 @@
 # Architecture
 
-The iPad app is the only required app. There is no backend. All presets and images live on the iPad.
+The iPad app is the only required app on the devices. The scene library syncs through Firebase, see `backend.md`. Everything below works from the iPad's local copy, so firing a scene needs no database.
 
 ```
                    ┌── HTTPS, local network ──▶ Hue Bridge ──▶ lights
@@ -19,7 +19,7 @@ iPad app ── tap ───┼── HTTPS, internet ───────▶ 
 | `imageHash` | Projector |
 | `fadeSeconds` | Hue transition and image crossfade |
 
-Presets are stored in `Documents/presets.json`. Images are JPEGs, at most 4K, stored in `Documents/images/` and named by SHA-256.
+Scenes are cached in `Documents/presets.json`. Images are JPEGs, at most 4K, stored in `Documents/images/` and named by SHA-256.
 
 ## Hue (`iPad/HueClient.swift`)
 
@@ -27,7 +27,7 @@ Presets are stored in `Documents/presets.json`. Images are JPEGs, at most 4K, st
 - Discovery uses Bonjour `_hue._tcp`. The host name comes from the TXT record `bridgeid`: drop the middle `fffe` and add `.local`.
 - Pairing: `POST /api` after the bridge button is pressed. The key is stored in the Keychain.
 - Firing: `PUT /clip/v2/resource/scene/{id}` with `recall.action` set to `active`, or `dynamic_palette` for animated scenes.
-- Scenes are created in the official Hue app. This app only selects them.
+- Scenes come from the official Hue app or from the MCP server. The app selects them, and creates one from a saved `lightDesign` when the bridge is in reach.
 
 ## Spotify (`iPad/SpotifyClient.swift`)
 

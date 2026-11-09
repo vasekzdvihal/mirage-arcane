@@ -48,6 +48,30 @@ pnpm --dir mcp install && pnpm --dir mcp build
 claude mcp add mirage-arcane -e MIRAGE_USER_EMAIL=<your google email> -- node "$PWD/mcp/dist/index.js"
 ```
 
+### Hue tools
+
+The same server talks to the bridge directly. The key sits in `~/.config/mirage-arcane/hue.json`, outside the repo. The bridge certificate is checked against Hue's root CA and the paired bridge id.
+
+| Tool | Purpose | Needs home network |
+|---|---|---|
+| `list_hue_home` | Rooms, zones, lights. Saves a copy to Firestore. Away, returns that copy | No |
+| `list_hue_scenes` | Bridge scenes with ids, for `upsert_scene` | Yes |
+| `create_hue_scene` | Create or replace a scene from colors and brightness | Yes |
+| `preview_hue_scene`, `delete_hue_scene` | Show on the real lights, or remove | Yes |
+| `design_lights` | Save a design on a library scene | No |
+
+A design stays in `scenes/{id}.lightDesign`. When the iPad has a paired bridge in reach, it creates the Hue scene, sets `hueSceneID` and clears the design. It tries when scenes change and when the app comes to the front.
+
+Pair once with the button pressed. Pairing is deliberately a command, not an MCP tool:
+
+```bash
+node mcp/dist/hue-pair.js <bridge-id>.local   # find it with: dns-sd -B _hue._tcp
+```
+
+## Live project
+
+Project `mirage-arcane`, on the Blaze plan. Firestore is in `nam5`. It was created in the default region when rules were first deployed. The Storage bucket is `mirage-arcane.firebasestorage.app` in `US-CENTRAL1`. Check in the console that a budget alert exists.
+
 ## Firebase project setup
 
 Manual, in the Firebase console:

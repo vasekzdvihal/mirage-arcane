@@ -8,17 +8,20 @@ Working on the real iPad (8th generation, iPadOS 26.7): one tap changes the Hue 
 
 - Spotify after a long idle period, such as 30 minutes with the Mac player paused.
 - AirPlay stability over a full session.
+- The iPad turning a saved light design into a real Hue scene.
+
+## Done: cloud library and agent tools
+
+Google login, Firebase sync, and an MCP server that builds the library and designs Hue scenes. See `backend.md`.
 
 ## Next
 
-1. **Login and cloud database.** Built on `feat/firebase-backend`, see `backend.md`. Waiting for the real Firebase project to test Google login on the iPad.
-2. **MCP server for the app's data.** Built and tested against the Firebase emulator. Not yet connected to the real project.
-3. **Hue and Spotify MCP servers** (separate work) let an agent find scene IDs and playlists to put into presets.
+1. **Spotify access for agents.** Best candidate is `marcelmarais/spotify-mcp-server`. It needs Node 26.8.1 or newer, the Spotify Client Secret, and one more redirect URI. Until then, playlist URIs come from the app.
+2. **Real content.** Replace placeholder images and build the campaign scenes.
+3. **Pre-session check screen** for all systems.
 
 ## Later
 
-- Organise presets as Campaign, Location, Preset.
-- Pre-session check screen for all systems.
 - Looping video, volume fades, sound effects.
 - Pin the Hue root CA and check the bridge ID against the certificate. Remove the test hooks or put them behind a debug flag.
 - If the Apple TV fallback is ever used for real, add pairing and encryption to its network link, and limit image and cache size. Today any device on the network can connect to it.
