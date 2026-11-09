@@ -68,6 +68,10 @@ Pair once with the button pressed. Pairing is deliberately a command, not an MCP
 node mcp/dist/hue-pair.js <bridge-id>.local   # find it with: dns-sd -B _hue._tcp
 ```
 
+## Live project
+
+Project `mirage-arcane`, on the Blaze plan. Firestore is in `nam5`. It was created in the default region when rules were first deployed. The Storage bucket is `mirage-arcane.firebasestorage.app` in `US-CENTRAL1`. Check in the console that a budget alert exists.
+
 ## Firebase project setup
 
 Manual, in the Firebase console:

@@ -6,6 +6,10 @@
 - A Philips Hue Bridge on the same network as the iPad.
 - Spotify Premium, and a Spotify app at developer.spotify.com/dashboard with Web API enabled and the redirect URI `mirage-arcane://spotify-callback`.
 
+## New checkout
+
+Run `scripts/firebase-config.sh`, which needs `firebase login` on this Mac. Or copy `iPad/GoogleService-Info.plist` and `iPad/Firebase.local.xcconfig` from another checkout. Without them, the app builds with login and sync off.
+
 ## First install on an iPad
 
 1. Connect the iPad by USB and tap **Trust**.
@@ -17,9 +21,16 @@
 ## First run in the app
 
 1. Allow Local Network access.
+1. Gear icon: tap **Sign in with Google**.
 2. Gear icon: tap **Find bridge**, press the bridge button, and tap **Pair** within 30 seconds.
 3. Paste the Spotify Client ID and log in.
 4. Press play once in Spotify on the Mac, tap **Refresh players and playlists**, and choose the Mac.
+
+## Agent tools on the Mac
+
+1. `pnpm --dir mcp install && pnpm --dir mcp build`
+2. Press the bridge button and run `node mcp/dist/hue-pair.js <bridge-id>.local`
+3. Register the server, as shown in `backend.md`. Start a new Claude session to load its tools.
 
 ## Game-night checklist
 

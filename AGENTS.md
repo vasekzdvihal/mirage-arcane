@@ -15,6 +15,8 @@ PATH="$PWD/mcp/node_modules/.bin:$PATH" pnpm --dir mcp test   # MCP and security
 - Each system fires independently in `AppModel.fire`. One failure must never block the other two.
 - The projector path is AirPlay Screen Mirroring from the iPad (`iPad/ExternalDisplay.swift`). The `TV/` app is only a fallback.
 - Keep the music code behind one module (`SpotifyClient`). Spotify's API rules change often.
+- The scene library lives in Firebase. Hue keys and Spotify tokens stay on their device and must never reach Firestore.
+- Agents change the library and the bridge only through the MCP server in `mcp/`. Bridge pairing stays a command, never an MCP tool.
 
 ## Gotchas
 - Connect to the Hue Bridge by its `.local` name, not its IP. App Transport Security rejects the bridge certificate on a public-range IP, and some home networks use one (error -9802).
@@ -22,6 +24,10 @@ PATH="$PWD/mcp/node_modules/.bin:$PATH" pnpm --dir mcp test   # MCP and security
 - Second screen needs two registrations: a `UISceneAccessory` on iPadOS 27+, and the scene manifest plus `AppDelegate` on iPadOS 26 and older. The real iPad runs 26.
 - Xcode 27 has no Simulator app. Use `DeviceHub.app` in `Xcode.app/Contents/Applications`.
 - With a simulated second screen, power it on with `simctl io <id> screenConfig --display=external power on`, then relaunch the app.
+- `iPad/GoogleService-Info.plist` and `iPad/Firebase.local.xcconfig` are gitignored. A new checkout or worktree needs them copied or `scripts/firebase-config.sh`, or the app builds with cloud features off.
+- `pnpm` here is a zsh alias for corepack, so bash scripts need the corepack shims on `PATH`.
+- `pnpm --dir mcp test` needs ports 9099, 8085 and 9199. Other projects' emulators can hold them. Do not kill those; use a temporary config with other ports.
+- After changing `mcp/src`, run `pnpm --dir mcp build`. Claude Code runs `mcp/dist/index.js` from the main checkout, and new tools load only in a new session.
 - Sign only with the Personal Team in `project.yml`. Never switch to the company teams that this Mac is also signed in to.
 - The app accepts any certificate from the bridge (`BridgeTrust`). Pin the Hue root CA before this leaves POC.
 
